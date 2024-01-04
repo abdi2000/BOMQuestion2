@@ -8,7 +8,6 @@ namespace BOMQuestion2.Controllers
     [Route("[controller]")]
     public class WeatherDataController : ControllerBase
     {
-
         private readonly ILogger<WeatherDataController> _logger;
 
         public WeatherDataController(ILogger<WeatherDataController> logger)
@@ -22,19 +21,24 @@ namespace BOMQuestion2.Controllers
             try
             {
                 int? wmo = GetWMO(station);
-                _logger.Log(LogLevel.Information, $"The WMO is {wmo}");
-                if (wmo == null) return BadRequest($"Incorrect WMO Input");
-                var weatherData = await DeSerializeJsonData(wmo);
-                return Ok(new WeatherDataResponse()
-                {
-                    WeatherResponse = weatherData.observations.data
-                }
 
-                    );
+                _logger.Log(LogLevel.Information, $"The WMO is {wmo}");
+
+                if (wmo == null) return NotFound($"Incorrect WMO Input");
+
+                using (var client = new HttpClient())
+                {
+                    var weatherData = await client.GetFromJsonAsync<WeatherData>($"http://www.bom.gov.au/fwo/IDS60901/IDS60901.{wmo}.json");
+
+                    return Ok(new WeatherDataResponse()
+                    {
+                        WeatherResponse = weatherData.observations.data
+                    });
+                }
             }
             catch (HttpRequestException httpRequestException)
             {
-                return BadRequest($"Error getting weather from OpenWeather: {httpRequestException.Message}");
+                return BadRequest($"Error getting weather Information: {httpRequestException.Message}");
             }
         }
         [HttpGet("[action]/{station}/{element}")]
@@ -43,10 +47,10 @@ namespace BOMQuestion2.Controllers
             try
             {
                 int? wmo = GetWMO(station);
-                if (wmo == null) return BadRequest($"Incorrect WMO Input");
+                if (wmo == null) return NotFound($"Incorrect WMO Input");
 
                 var ele = typeof(Data).GetProperty(element);
-                if(ele == null) return BadRequest($"Incorrect field Input");
+                if(ele == null) return NotFound($"Incorrect field Input");
 
                 using (var client = new HttpClient())
                 {
@@ -58,7 +62,7 @@ namespace BOMQuestion2.Controllers
                         Value =  x[element]
                     }).ToList();
 
-                    var jsonResult = JsonConvert.SerializeObject(result,new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore});
+                    var jsonResult = JsonConvert.SerializeObject(result, Formatting.Indented);
 
                     return Ok(new
                     {
@@ -72,14 +76,6 @@ namespace BOMQuestion2.Controllers
             }
         }
 
-        private async Task<WeatherData> DeSerializeJsonData(int? wmo)
-        {
-            using (var client = new HttpClient())
-            {
-                var response = await client.GetFromJsonAsync<WeatherData>($"http://www.bom.gov.au/fwo/IDS60901/IDS60901.{wmo}.json");
-                return response;
-            }
-        }
         private int? GetWMO(string station)
         {
             switch (station)
