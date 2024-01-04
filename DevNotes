@@ -1,0 +1,21 @@
+Below is the brief implementation of two scenarios mentioned in Question 2:
+
+The solution is built using .Net 8.0 and is IIS deployable and a Restful http service. It includes Swagger to test the response when run.
+
+- The web service API shall be able to fetch all weather observation data for any weather observation 
+station.
+
+Explaination--
+  1. To achieve this, I have written a HttpGet API Method which accepts the weather station name as input and returns it's data.
+  2. I have used the Json URI given in the question and deserialized it.
+  3. I have developed two contracts. One for holding the raw data and the other to display in response.
+
+- The web service API shall be able to fetch a specific piece of weather observation data (e.g. Temp, 
+App Temp, Dew Point etc.) for any weather observation station.
+
+Explaination--
+  1. To achieve this, I have written a HttpGet API Overloaded Method which accepts the weather station name and the "element" name as input.
+  2. If any of them are not valid a bad request response is return.
+  3. If the request is valid then the Json string is parsed into JObject.
+  4. A new WeatherDataFilteredResponse is populated on basis of JObject data and the "element" passed as input.
+  5. The result is then serialized and returned as response.
